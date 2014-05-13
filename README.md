@@ -18,7 +18,7 @@ $ npm install express-mongoose-store
 ````
 var session        = require('express-session');
 var mongoose       = require('mongoose');
-var MS             = require('../ms')(session, mongoose);
+var MS             = require('express-mongoose-store')(session, mongoose);
 
 app.use(session({ secret: 'keyboard cat', store: new MS({ttl: 600000}) }); //10 minute sessions
 ````
