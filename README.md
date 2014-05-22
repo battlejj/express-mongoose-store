@@ -23,6 +23,23 @@ var MS             = require('express-mongoose-store')(session, mongoose);
 app.use(session({ secret: 'keyboard cat', store: new MS({ttl: 600000}) }); //10 minute sessions
 ````
 
+Or if you want the session store to keep your Mongoose connection alive as well you can do the following:
+
+````
+var session        = require('express-session');
+var mongoose       = require('mongoose');
+var mongoose_store = new MS();
+
+setInterval(function(){
+  mongoose_store.keepAlive();
+}, 20000);
+
+app.use(session({ secret: 'keyboard cat', store: mongoose_store });
+````
+
+Essentially if your server has a lull in activity this protects your mongoose connection from timing out and having to reconnect, which in express can cause you to throw an error to a user.
+
+
 ###Test
 Running tests requires a MongoDB instance running on 127.0.0.1:27017 with no authentication. It will also
 delete anything in a database called "test" in the collection called "sessions" so if that is not desired, you
