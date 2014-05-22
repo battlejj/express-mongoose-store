@@ -140,20 +140,16 @@ module.exports = function(session, mongoose){
 
   }
 
+  MongooseStore.prototype.keepAlive = function(){
+    debug('KEEPALIVE Querying Mongoose for empty set.');
+    Session.find({ noexits: true }, function(err, data){
+      if(err){
+        debug('KEEPALIVE error, %s', err);
+      } else {
+        debug('KEEPALIVE success');
+      }
+    });
+  }
 
   return MongooseStore;
 }
-
-/*
- Session.find({})
- .exec(function(err, data){
- if(err){
- debug('The following error occurred in find(): %s', err)
- }
- if(data.length){
- debug('Found the following records in find(): %s', data)
- } else {
- debug('Found no records in find(): %s', data)
- }
- })
- */
