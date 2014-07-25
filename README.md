@@ -18,8 +18,10 @@ $ npm install express-mongoose-store
 ````
 var session        = require('express-session');
 var mongoose       = require('mongoose');
-var MS             = require('express-mongoose-store')(session, mongoose);
 
+mongoose.connect();
+
+var MS             = require('express-mongoose-store')(session, mongoose);
 app.use(session({ secret: 'keyboard cat', store: new MS({ttl: 600000}) }); //10 minute sessions
 ````
 
@@ -28,6 +30,10 @@ Or if you want the session store to keep your Mongoose connection alive as well 
 ````
 var session        = require('express-session');
 var mongoose       = require('mongoose');
+
+mongoose.connect();
+
+var MS             = require('express-mongoose-store')(session, mongoose);
 var mongoose_store = new MS();
 
 setInterval(function(){
