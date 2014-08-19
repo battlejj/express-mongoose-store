@@ -3,6 +3,7 @@ module.exports = function(session, mongoose){
   var Schema  = mongoose.Schema
     , Store   = session.Store
     , debug   = require('debug')('mongoose-store')
+    , one_day = 1000 * 60 * 60 * 24
     ;
 
   var session_schema = new Schema({
@@ -18,13 +19,10 @@ module.exports = function(session, mongoose){
     sid: 1
   })
 
-  var Session = mongoose.model('Session', session_schema)
-    , one_day = 1000 * 60 * 60 * 24
-    ;
-
   function MongooseStore(options) {
     options = options || {};
     Store.call(this, options);
+    this.Session = mongoose.model(options.modelName || 'Session', session_schema);
     this.ttl = options.ttl || one_day;
   };
 
@@ -32,7 +30,7 @@ module.exports = function(session, mongoose){
 
   MongooseStore.prototype.get = function(sid, fn){
     debug('GET %s', sid);
-    Session.findOne({ sid: sid })
+    this.Session.findOne({ sid: sid })
       .exec(function(err, data){
         if(err){
           debug('GET error: %s', err);
@@ -87,7 +85,7 @@ module.exports = function(session, mongoose){
 
       debug('Session record is: %s', JSON.stringify(s));
 
-      Session.findOneAndUpdate({ sid: sid }, s, { upsert: true })
+      this.Session.findOneAndUpdate({ sid: sid }, s, { upsert: true })
         .exec(function(err, data){
           if(err){
             debug('SET error in DB call %s', err);
@@ -113,7 +111,7 @@ module.exports = function(session, mongoose){
 
   MongooseStore.prototype.destroy = function(sid, fn){
     debug('DESTROY %s', sid);
-    Session.findOneAndRemove({ sid: sid })
+    this.Session.findOneAndRemove({ sid: sid })
       .exec(function(err, data){
         if(err){
           debug('DESTROY error, %s', err);
@@ -127,7 +125,7 @@ module.exports = function(session, mongoose){
 
   MongooseStore.prototype.clearAll = function(fn){
     debug('CLEARALL');
-    Session.remove({})
+    this.Session.remove({})
       .exec(function(err, data){
         if(err){
           debug('CLEARALL error, %s', err);
@@ -142,7 +140,7 @@ module.exports = function(session, mongoose){
 
   MongooseStore.prototype.keepAlive = function(){
     debug('KEEPALIVE Querying Mongoose for empty set.');
-    Session.find({ noexits: true }, function(err, data){
+    this.Session.find({ noexits: true }, function(err, data){
       if(err){
         debug('KEEPALIVE error, %s', err);
       } else {
