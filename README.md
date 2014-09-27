@@ -54,3 +54,9 @@ need to modify the tests or not run them.
 ````
 npm test
 ````
+
+###Change Log
+
+#####v1.0.3 - Session expiration with MongoDB expires via @rubenstolk
+
+#####v1.0.2 - Configurable Model Name for Session via @rubenstolk
