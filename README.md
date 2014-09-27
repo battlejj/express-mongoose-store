@@ -25,6 +25,15 @@ var MS             = require('express-mongoose-store')(session, mongoose);
 app.use(session({ secret: 'keyboard cat', store: new MS({ttl: 600000}) }); //10 minute sessions
 ````
 
+###Custom Model Name
+By default the model name used for storing sessions is "sessions", however, you can customize this by
+passing a modelName argument to the store like so:
+
+````
+app.use(session({ secret: 'keyboard cat', store: new MS({modelName: 'myApp_sessions' ttl: 600000}) });
+````
+
+
 Or if you want the session store to keep your Mongoose connection alive as well you can do the following:
 
 ````
@@ -52,6 +61,7 @@ delete anything in a database called "test" in the collection called "sessions" 
 need to modify the tests or not run them.
 
 ````
+npm install
 npm test
 ````
 
