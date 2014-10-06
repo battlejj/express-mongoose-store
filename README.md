@@ -67,6 +67,8 @@ npm test
 
 ###Change Log
 
+#####v1.0.4 - Bug fix
+
 #####v1.0.3 - Session expiration with MongoDB expires via @rubenstolk
 
 #####v1.0.2 - Configurable Model Name for Session via @rubenstolk

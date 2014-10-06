@@ -1,6 +1,6 @@
 {
   "name": "express-mongoose-store",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Session store for people who want to use MongoDB sessions, and already have a MongooseJS connection for their backend.",
   "main": "./index.js",
   "repository": {
