@@ -9,6 +9,7 @@ module.exports = function (session, mongoose) {
     options = options || {};
     options.modelName = options.modelName || 'Session';
     options.ttl = options.ttl || one_day;
+    this.ttl = options.ttl;
 
     session.Store.call(this, options);
 
