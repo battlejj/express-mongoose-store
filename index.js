@@ -101,7 +101,9 @@ module.exports = function (session, mongoose) {
       }
       else {
         debug('DESTROY success');
-        return fn();
+        if(typeof fn === 'function'){
+          return fn();
+        }
       }
     });
   };
@@ -115,7 +117,9 @@ module.exports = function (session, mongoose) {
       }
       else {
         debug('CLEARALL success');
-        return fn();
+        if(typeof fn === 'function'){
+          return fn();
+        }
       }
     });
   };
