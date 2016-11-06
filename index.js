@@ -1,6 +1,7 @@
 'use strict';
 
-var debug = require('debug')('mongoose-store'),
+var Cache = require('node-cache'),
+    debug = require('debug')('mongoose-store'),
     one_day = 1000 * 60 * 60 * 24;
 
 module.exports = function (session, mongoose) {
@@ -10,6 +11,8 @@ module.exports = function (session, mongoose) {
     options.modelName = options.modelName || 'Session';
     options.ttl = options.ttl || one_day;
     this.ttl = options.ttl;
+
+    this.cache = new Cache({ stdTTL: options.cache_ttl || 300, useClones: false }),
 
     session.Store.call(this, options);
 
@@ -25,8 +28,13 @@ module.exports = function (session, mongoose) {
 
   MongooseStore.prototype.get = function (sid, fn) {
     debug('GET %s', sid);
-    this.Session.findOne({ sid: sid })
-      .exec(function (err, data) {
+    this.cache.get(sid, function (err, data) {
+      if (!err && data) {
+        debug('Returning session from cache');
+        return fn(null, data);
+      }
+
+      this.Session.findOne({ sid: sid }).exec(function (err, data) {
         if (err) {
           debug('GET error: %s', err);
           return fn(err);
@@ -46,10 +54,12 @@ module.exports = function (session, mongoose) {
             debug('Error was %s', e);
             return fn(e);
           }
-          debug('Returning valid session.');
+          debug('Setting cache and returning valid session.');
+          this.cache.set(sid, result);
           return fn(null, result);
         }
-      });
+      }.bind(this));
+    }.bind(this));
   };
 
   MongooseStore.prototype.set = function (sid, sess, fn) {
@@ -82,9 +92,10 @@ module.exports = function (session, mongoose) {
           debug('Error after SET on JSON Parse %s', err);
           return fn(err);
         }
-        debug('Return the session %s', data.session);
+        debug('Set cache and return the session %s', data.session);
+        this.cache.set(sid, result);
         return fn(null, result);
-      });
+      }.bind(this));
     }
     catch (err) {
       debug('SET error before query %s', err);
