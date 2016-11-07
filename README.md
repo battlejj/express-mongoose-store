@@ -13,6 +13,7 @@ $ npm install express-mongoose-store
 
 ###Options
 ```ttl``` - how long a session should last from last page view. Defaults to 1 day.
+```cache_ttl``` - how long a session will be cached in memory
 
 ###Usage
 ````
@@ -66,6 +67,10 @@ npm test
 ````
 
 ###Change Log
+
+#####v1.0.6 - Add memory caching to limit number of database queries
+
+#####v1.0.5 - Fix for destroy callback
 
 #####v1.0.4 - Bug fix
 
