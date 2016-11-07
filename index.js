@@ -112,6 +112,7 @@ module.exports = function (session, mongoose) {
       }
       else {
         debug('DESTROY success');
+        this.cache.del(sid);
         if(typeof fn === 'function'){
           return fn();
         }
