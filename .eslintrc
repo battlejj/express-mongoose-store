@@ -1,0 +1,65 @@
+{
+  "extends": ["eslint:recommended", "airbnb"],
+  "env": {
+    "browser": false,
+    "node": true
+  },
+  "rules": {
+    "strict": ["error"],
+    "quotes": ["error", "single", { "allowTemplateLiterals": true }],
+    "semi": ["error", "always"],
+    "no-console": ["off"],
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-param-reassign": ["off"],
+    "no-underscore-dangle": ["off"],
+    "brace-style": ["error", "stroustrup"],
+    "space-before-function-paren": ["error", "always"],
+    "comma-dangle": ["error", "never"],
+    "func-names": ["off"],
+    "consistent-return": ["off"],
+    "max-len": ["error", { "code": 100, "tabWidth": 2, "ignoreComments": true }],
+    "padded-blocks": ["off"],
+    "global-require": ["off"],
+    "no-unused-expressions": ["off"],
+    "no-shadow": ["off"],
+    "new-cap": ["error", { "capIsNewExceptions": ["Attachment"], "newIsCapExceptions": ["model"] }],
+    "no-restricted-syntax": ["error", "DebuggerStatement", "LabeledStatement", "WithStatement"],
+    "no-nested-ternary": ["off"],
+    "no-return-assign": ["off"],
+    "no-confusing-arrow": ["off"],
+    "import/no-extraneous-dependencies": ["off"]
+  },
+  "globals": {
+    // ES6
+    "Set": true,
+
+    // Node
+    "module": true,
+    "require": true,
+    "exports": true,
+    "process": true,
+    "__dirname": true,
+    "global": true,
+    "Buffer": true,
+    "setTimeout": true,
+    "escape": true,
+    "unescape": true,
+
+    // MongoDB
+    "db": true,
+    "print": true,
+    "ObjectId": true,
+
+    // Testing stuff
+    "casper": true,
+    "window": true,
+    "document": true,
+    "test": true,
+    "should": true,
+    "describe": true,
+    "before": true,
+    "beforeEach": true,
+    "after": true,
+    "it": true
+  }
+}

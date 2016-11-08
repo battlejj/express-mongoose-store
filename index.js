@@ -1,152 +1,132 @@
-'use strict';
+const debug = require('debug')('mongoose-store');
+const Cache = require('node-cache');
 
-var Cache = require('node-cache'),
-    debug = require('debug')('mongoose-store'),
-    one_day = 1000 * 60 * 60 * 24;
+const HOUR = 1000 * 60 * 60;
+const DAY = HOUR * 24;
 
-module.exports = function (session, mongoose) {
+module.exports = (session, mongoose) => class MongooseStore extends session.Store {
+  constructor (options = { modelName: 'Session', ttl: DAY, ttlCache: HOUR }) {
+    super(options);
 
-  var MongooseStore = function (options) {
-    options = options || {};
+    this.ttl = options.ttl || DAY;
+    this.cache = new Cache({ stdTTL: options.ttlCache || HOUR });
     options.modelName = options.modelName || 'Session';
-    options.ttl = options.ttl || one_day;
-    this.ttl = options.ttl;
 
-    this.cache = new Cache({ stdTTL: options.cache_ttl || 300, useClones: false }),
+    try {
+      this.Session = mongoose.model(options.modelName);
+    }
+    catch (ex) {
+      this.Session = mongoose.model(options.modelName, new mongoose.Schema({
+        _id: { type: mongoose.Schema.ObjectId, select: false },
+        sid: { type: String, index: true },
+        session: { type: String },
+        created: { type: Date, default: Date.now, expires: parseInt(options.ttl / 1000, 10) }
+      }, { strict: false }));
+    }
+  }
 
-    session.Store.call(this, options);
-
-    this.Session = mongoose.model(options.modelName, new mongoose.Schema({
-      _id: { type: mongoose.Schema.ObjectId, select: false },
-      sid: { type: String, index: true },
-      session: { type: String },
-      created: { type: Date, default: Date.now, expires: parseInt(options.ttl / 1000, 10) },
-    }, { strict: false }));
-  };
-
-  MongooseStore.prototype.__proto__ = session.Store.prototype;
-
-  MongooseStore.prototype.get = function (sid, fn) {
+  get (sid, fn = () => {}) {
     debug('GET %s', sid);
-    this.cache.get(sid, function (err, data) {
+
+    this.cache.get(sid, (err, data) => {
       if (!err && data) {
-        debug('Returning session from cache');
+        debug('GET return session from cache');
         return fn(null, data);
       }
 
-      this.Session.findOne({ sid: sid }).exec(function (err, data) {
+      this.Session.findOne({ sid }).exec((err, data) => {
         if (err) {
           debug('GET error: %s', err);
           return fn(err);
         }
-
-        if (!data) {
+        else if (!data) {
           debug('GET no session found.');
           return fn();
         }
-        else {
-          var result;
-          try {
-            result = JSON.parse(data.session);
-          }
-          catch(e) {
-            debug('Error on JSON Parse of %s', data.session);
-            debug('Error was %s', e);
-            return fn(e);
-          }
-          debug('Setting cache and returning valid session.');
-          this.cache.set(sid, result);
-          return fn(null, result);
-        }
-      }.bind(this));
-    }.bind(this));
-  };
 
-  MongooseStore.prototype.set = function (sid, sess, fn) {
-    debug('SET %s', sid);
-    try {
-      var expires = Date.now() + this.ttl;
-      if (sess.cookie) {
-        sess.cookie.expires = new Date(expires);
-      }
-      else {
-        sess.cookie = { expires: new Date(expires) };
-      }
+        debug('GET set cache and return session %s', data.session);
 
-      var s = { session: JSON.stringify(sess), created: Date.now() };
-
-      debug('Session record is: %s', JSON.stringify(s));
-
-      this.Session.findOneAndUpdate({ sid: sid }, s, { upsert: true }).exec(function (err, data) {
-        if (err) {
-          debug('SET error in DB call %s', err);
-          return fn(err);
-        }
-        debug('Session updated.');
-        var result;
         try {
-          debug('Try to JSON parse %s', data.session);
-          result = JSON.parse(data.session);
+          data = JSON.parse(data.session);
+          this.cache.set(sid, data);
+          return fn(null, data);
         }
-        catch(e) {
-          debug('Error after SET on JSON Parse %s', err);
-          return fn(err);
+        catch (ex) {
+          debug('GET error: %s, %s', ex, data.session);
+          return fn(ex);
         }
-        debug('Set cache and return the session %s', data.session);
-        this.cache.set(sid, result);
-        return fn(null, result);
-      }.bind(this));
-    }
-    catch (err) {
-      debug('SET error before query %s', err);
-      return fn(err);
-    }
-  };
+      });
+    });
+  }
 
-  MongooseStore.prototype.destroy = function (sid, fn) {
-    debug('DESTROY %s', sid);
-    this.Session.findOneAndRemove({ sid: sid }).exec(function (err) {
+  set (sid, session, fn = () => {}) {
+    debug('SET %s', sid);
+
+    const expires = new Date(Date.now() + this.ttl);
+    session.cookie = Object.assign(session.cookie || { expires });
+
+    const data = {
+      session: JSON.stringify(session),
+      created: Date.now()
+    };
+
+    debug('SET session %s', JSON.stringify(data));
+
+    this.Session.findOneAndUpdate({ sid }, data, { upsert: true, new: true }).exec((err, data) => {
       if (err) {
-        debug('DESTROY error, %s', err);
+        debug('SET database error %s', err);
         return fn(err);
       }
-      else {
-        debug('DESTROY success');
-        this.cache.del(sid);
-        if(typeof fn === 'function'){
-          return fn();
-        }
+
+      debug('SET set cache and return session %s', JSON.stringify(data));
+
+      try {
+        data = JSON.parse(data.session);
+        this.cache.set(sid, data);
+        return fn(null, data);
+      }
+      catch (ex) {
+        debug('GET error: %s, %s', ex, data.session);
+        return fn(ex);
       }
     });
-  };
+  }
 
-  MongooseStore.prototype.clearAll = function (fn) {
+  destroy (sid, fn = () => {}) {
+    debug('DESTROY %s', sid);
+
+    this.Session.findOneAndRemove({ sid }).exec((err) => {
+      if (err) {
+        debug('DESTROY error: %s', err);
+        return fn(err);
+      }
+
+      debug('DESTROY success: %s', sid);
+      this.cache.del(sid);
+      fn();
+    });
+  }
+
+  clearAll (fn = () => {}) {
     debug('CLEARALL');
-    this.Session.remove({}).exec(function (err) {
+
+    this.Session.remove({}).exec((err) => {
       if (err) {
         debug('CLEARALL error, %s', err);
         return fn(err);
       }
-      else {
-        debug('CLEARALL success');
-        if(typeof fn === 'function'){
-          return fn();
-        }
-      }
-    });
-  };
 
-  MongooseStore.prototype.keepAlive = function () {
-    debug('KEEPALIVE Querying Mongoose for empty set.');
-    this.Session.find({ noexits: true }, function (err) {
-      if (err) {
-        debug('KEEPALIVE error, %s', err);
-      }
-      else {
-        debug('KEEPALIVE success');
-      }
+      debug('CLEARALL success');
+      this.cache.flushAll();
+      return fn();
     });
-  };
+  }
 
-  return MongooseStore;
+  keepAlive () {
+    debug('KEEPALIVE');
+
+    this.Session.find({ noexits: true }, err => err ?
+      debug('KEEPALIVE error: %s', err) :
+      debug('KEEPALIVE success'));
+  }
 };
