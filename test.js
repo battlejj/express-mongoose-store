@@ -1,18 +1,15 @@
 const expect = require('chai').expect;
 const session = require('express-session');
 const mongoose = require('mongoose');
+const cache = require('cache-manager').caching({ store: 'memory', ttl: 300 });
 
 let MongooseStore;
 let store;
 
-[true, false].forEach((cache) => {
-  describe(`Test sessions (cache ${cache ? 'enabled' : 'disabled'})`, () => {
+[true, false].forEach((withCache) => {
+  describe(`Test sessions (cache ${withCache ? 'enabled' : 'disabled'})`, () => {
     before((done) => {
-      const options = {};
-
-      if (!cache) {
-        options.ttlCache = -1;
-      }
+      const options = { cache: withCache && cache };
 
       MongooseStore = require('./index')(session, mongoose);
       store = new MongooseStore(options);

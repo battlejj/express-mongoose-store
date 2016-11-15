@@ -1,6 +1,6 @@
 {
   "name": "express-mongoose-store",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Session store for people who want to use MongoDB sessions, and already have a MongooseJS connection for their backend.",
   "main": "./index.js",
   "repository": {
@@ -29,11 +29,11 @@
     "lint": "./node_modules/eslint/bin/eslint.js ."
   },
   "dependencies": {
-    "debug": "^2.3.0",
-    "node-cache": "^4.1.0"
+    "debug": "^2.3.0"
   },
   "devDependencies": {
     "babel-eslint": "^7.1.0",
+    "cache-manager": "^2.2.0",
     "chai": "^3.5.0",
     "eslint": "^3.9.1",
     "eslint-config-airbnb": "^13.0.0",

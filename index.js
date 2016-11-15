@@ -1,15 +1,18 @@
 const debug = require('debug')('mongoose-store');
-const Cache = require('node-cache');
 
 const HOUR = 1000 * 60 * 60;
 const DAY = HOUR * 24;
 
 module.exports = (session, mongoose) => class MongooseStore extends session.Store {
-  constructor (options = { modelName: 'Session', ttl: DAY, ttlCache: HOUR }) {
+  constructor (options = { modelName: 'Session', ttl: DAY }) {
     super(options);
 
     this.ttl = options.ttl || DAY;
-    this.cache = new Cache({ stdTTL: options.ttlCache || HOUR });
+
+    if (options.cache) {
+      this.cache = options.cache;
+    }
+
     options.modelName = options.modelName || 'Session';
 
     try {
@@ -25,38 +28,38 @@ module.exports = (session, mongoose) => class MongooseStore extends session.Stor
     }
   }
 
+  _get (sid, fn = () => {}) {
+    this.Session.findOne({ sid }).exec((err, data) => {
+      if (err) {
+        debug('GET error: %s', err);
+        return fn(err);
+      }
+      else if (!data) {
+        debug('GET no session found.');
+        return fn();
+      }
+
+      debug('GET parse and return session %s', data.session);
+
+      try {
+        data = JSON.parse(data.session);
+        return fn(null, data);
+      }
+      catch (ex) {
+        debug('GET error: %s, %s', ex, data.session);
+        return fn(ex);
+      }
+    });
+  }
+
   get (sid, fn = () => {}) {
     debug('GET %s', sid);
 
-    this.cache.get(sid, (err, data) => {
-      if (!err && data) {
-        debug('GET return session from cache');
-        return fn(null, data);
-      }
+    if (this.cache) {
+      return this.cache.wrap(sid, fn => this._get(sid, fn), fn);
+    }
 
-      this.Session.findOne({ sid }).exec((err, data) => {
-        if (err) {
-          debug('GET error: %s', err);
-          return fn(err);
-        }
-        else if (!data) {
-          debug('GET no session found.');
-          return fn();
-        }
-
-        debug('GET set cache and return session %s', data.session);
-
-        try {
-          data = JSON.parse(data.session);
-          this.cache.set(sid, data);
-          return fn(null, data);
-        }
-        catch (ex) {
-          debug('GET error: %s, %s', ex, data.session);
-          return fn(ex);
-        }
-      });
-    });
+    return this._get(sid, fn);
   }
 
   set (sid, session, fn = () => {}) {
@@ -78,11 +81,15 @@ module.exports = (session, mongoose) => class MongooseStore extends session.Stor
         return fn(err);
       }
 
-      debug('SET set cache and return session %s', JSON.stringify(data));
+      debug('SET parse and return session %s', JSON.stringify(data));
 
       try {
         data = JSON.parse(data.session);
-        this.cache.set(sid, data);
+
+        if (this.cache) {
+          this.cache.set(sid, data);
+        }
+
         return fn(null, data);
       }
       catch (ex) {
@@ -102,7 +109,11 @@ module.exports = (session, mongoose) => class MongooseStore extends session.Stor
       }
 
       debug('DESTROY success: %s', sid);
-      this.cache.del(sid);
+
+      if (this.cache) {
+        this.cache.del(sid);
+      }
+
       fn();
     });
   }
@@ -117,7 +128,11 @@ module.exports = (session, mongoose) => class MongooseStore extends session.Stor
       }
 
       debug('CLEARALL success');
-      this.cache.flushAll();
+
+      if (this.cache) {
+        this.cache.reset();
+      }
+
       return fn();
     });
   }
