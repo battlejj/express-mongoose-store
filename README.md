@@ -68,6 +68,10 @@ npm test
 
 ###Change Log
 
+#####v1.1.1 - Caching as plugin, not dependency
+
+#####v1.1.0 - Rewrite in ES2015 and tests for caching
+
 #####v1.0.6 - Add memory caching to limit number of database queries
 
 #####v1.0.5 - Fix for destroy callback
