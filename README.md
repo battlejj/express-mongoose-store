@@ -23,7 +23,7 @@ var mongoose       = require('mongoose');
 mongoose.connect();
 
 var MS             = require('express-mongoose-store')(session, mongoose);
-app.use(session({ secret: 'keyboard cat', store: new MS({ttl: 600000}) }); //10 minute sessions
+app.use(session({ secret: 'keyboard cat', store: new MS({ttl: 600000}) })); //10 minute sessions
 ````
 
 ###Custom Model Name
